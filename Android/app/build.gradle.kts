@@ -1,10 +1,12 @@
 plugins {
     id("com.android.application")
+    id("org.mozilla.rust-android-gradle.rust-android")
 }
 
 android {
     namespace = "com.hk416.android_lab_project_rs_00.sample_application"
     compileSdk = 34
+    ndkVersion = "26.2.11394342"
 
     defaultConfig {
         applicationId = "com.hk416.android_lab_project_rs_00.sample_application"
@@ -29,13 +31,34 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+    sourceSets {
+        getByName("androidTest") {
+            jniLibs.srcDir("$buildDir/rustJniLibs/android")
+        }
+        getByName("debug") {
+            jniLibs.srcDir("$buildDir/rustJniLibs/android")
+        }
+    }
+}
+
+cargo {
+    pythonCommand = "python3"
+    verbose = true
+    module  = "../../lib"
+    libname = "framework"
+    targets = listOf("arm64")
+}
+
+tasks.whenTaskAdded {
+    if (name == "javaPreCompileDebug" || name == "javaPreCompileRelease") {
+        dependsOn("cargoBuild")
+    }
 }
 
 dependencies {
 
     implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.games:games-activity:1.1.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
