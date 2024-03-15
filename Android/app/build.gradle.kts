@@ -31,6 +31,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+    buildFeatures {
+        viewBinding = true
+    }
     sourceSets {
         getByName("androidTest") {
             jniLibs.srcDir("$buildDir/rustJniLibs/android")
@@ -45,7 +48,7 @@ cargo {
     pythonCommand = "python3"
     verbose = true
     module  = "../../lib"
-    libname = "framework"
+    libname = "wgpu_app"
     targets = listOf("arm64")
 }
 
@@ -56,10 +59,12 @@ tasks.whenTaskAdded {
 }
 
 dependencies {
-
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.games:games-activity:1.1.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+    implementation("androidx.appcompat:appcompat:1.6.1")
+
+    // To use the Games Activity library
+    implementation("androidx.games:games-activity:2.0.2")
 }
