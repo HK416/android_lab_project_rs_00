@@ -30,6 +30,6 @@ winit = { version = "0.29.*", features = ["android-game-activity"] } # Apache-2.
 winit = "0.29.*"
 
 [package.metadata.android]
-build_targets = ["armv7-linux-androideabi", "aarch64-linux-android"]
+build_targets = ["x86_64", "aarch64-linux-android"]
 target_sdk_version = 34
 min_sdk_version = 24

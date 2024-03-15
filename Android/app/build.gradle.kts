@@ -49,7 +49,7 @@ cargo {
     verbose = true
     module  = "../../lib"
     libname = "wgpu_app"
-    targets = listOf("arm64")
+    targets = listOf("x86_64", "arm64")
 }
 
 tasks.whenTaskAdded {
