@@ -12,6 +12,14 @@ name = "wgpu_app"
 crate-type = ["cdylib"]
 path = "src/lib.rs"
 
+[[bin]]
+name = "wgpu_app_dev"
+path = "src/lib.rs"
+required-features = ["dev"]
+
+[features]
+dev = []
+
 [dependencies]
 log = "0.4.*" # MIT or Apache-2.0 license.
 android_logger = "0.13.*" # MIT or Apache-2.0 license.
@@ -19,6 +27,7 @@ serde = { version = "1.0.*", features = ["derive"] } # MIT or Apache-2.0 license
 bytemuck = { version = "1.14.*", features = ["derive"] } # MIT or Apache-2.o license.
 pollster = "0.3.*" # MIT or Apache-2.0 license.
 crossbeam-queue = "0.3.*" # MIT or Apache-2.0 license.
+hecs = { version = "0.10.*", features = ["macros"] } # MIT or Apache-2.0 license.
 
 wgpu = { version = "0.19.*", features = ["spirv"] } # MIT or Apache-2.0 license.
 glam = { version = "0.25.*", features = ["debug-glam-assert", "serde", "bytemuck", "scalar-math"] } # MIT or Apache-2.0 license.

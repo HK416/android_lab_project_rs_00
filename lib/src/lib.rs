@@ -1,3 +1,6 @@
+mod item;
+mod render;
+
 mod app;
 mod object;
 mod scene;
@@ -23,5 +26,21 @@ pub fn android_main(app: AndroidApp) {
         .build()
         .expect("Can't create event loop!");
 
-    app::run(event_loop);
+    app::run_android(event_loop);
+}
+
+#[allow(dead_code)]
+#[cfg(not(target_os = "android"))]
+pub fn main() {
+    use winit::window::Window;
+    use winit::window::WindowBuilder;
+    use winit::event_loop::EventLoop;
+
+    let event_loop: EventLoop<()> = EventLoop::new()
+        .expect("Can't create event loop!");
+    let window: Window = WindowBuilder::new()
+        .build(&event_loop)
+        .expect("Can't create window");
+
+    app::run_dev(window, event_loop);
 }
