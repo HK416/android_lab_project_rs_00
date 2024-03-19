@@ -13,6 +13,7 @@ pub struct Transform {
     inner: glam::Mat4, 
 }
 
+#[allow(dead_code)]
 impl Transform {
     #[inline]
     pub fn new() -> Self {
@@ -159,6 +160,7 @@ pub struct TransformBuilder {
     pub translation: glam::Vec3, 
 }
 
+#[allow(dead_code)]
 impl TransformBuilder {
     #[inline]
     pub fn new() -> Self {

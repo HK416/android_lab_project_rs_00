@@ -1,41 +1,58 @@
+/// #### 한국어 </br>
+/// 불투명한 물체의 색상 데이터 입니다. </br>
+/// 
+/// #### English (Translation) </br>
+/// This is color data for opaque objects. </br>
+/// 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Color {
+pub struct Rgb {
+    pub red: f32, 
+    pub green: f32, 
+    pub blue: f32, 
+}
+
+#[allow(dead_code)]
+impl Rgb {
+    #[inline]
+    pub fn as_vec4(&self) -> glam::Vec4 {
+        glam::vec4(self.red, self.green, self.blue, 1.0)
+    }
+}
+
+impl Default for Rgb {
+    #[inline]
+    fn default() -> Self {
+        Self { red: 1.0, green: 1.0, blue: 1.0 }
+    }
+}
+
+
+
+/// #### 한국어 </br>
+/// 투명한 물체의 색상 데이터 입니다. </br>
+/// 
+/// #### English (Translation) </br>
+/// This is color data for transparent objects. </br>
+/// 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Rgba {
     pub red: f32, 
     pub green: f32, 
     pub blue: f32, 
     pub alpha: f32, 
 }
 
-impl Color {
-    #[inline]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    #[inline]
-    pub fn from_rgb(red: f32, green: f32, blue: f32) -> Self {
-        Self { red, green, blue, alpha: 1.0 }
-    }
-
-    #[inline]
-    pub fn from_rgba(red: f32, green: f32, blue: f32, alpha: f32) -> Self {
-        Self { red, green, blue, alpha }
-    }
-
+#[allow(dead_code)]
+impl Rgba {
     #[inline]
     pub fn as_vec4(&self) -> glam::Vec4 {
-        glam::vec4(self.red, self.blue, self.green, self.alpha)
+        glam::vec4(self.red, self.green, self.blue, self.alpha)
     }
 }
 
-impl Default for Color {
+impl Default for Rgba {
     #[inline]
     fn default() -> Self {
-        Self { 
-            red: 1.0, 
-            green: 1.0, 
-            blue: 1.0, 
-            alpha: 1.0 
-        }
+        Self { red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0 }
     }
 }

@@ -63,10 +63,11 @@ pub struct IndexBuffer {
     format: wgpu::IndexFormat,
 }
 
+#[allow(dead_code)]
 impl IndexBuffer {
     pub fn from_uint16_indices(
         label: Option<&str>, 
-        indices: &[u32], 
+        indices: &[u16], 
         device: &wgpu::Device, 
         queue: &wgpu::Queue
     ) -> Self {
@@ -221,6 +222,7 @@ pub struct ModelMesh {
     index_buffer: Option<IndexBuffer>, 
 }
 
+#[allow(dead_code)]
 impl ModelMesh {
     #[inline]
     pub fn new(vertex_buffer: VertexBuffer) -> Self {
@@ -292,4 +294,82 @@ pub fn create_plane_mesh(
     );
 
     return ModelMesh::new(vertex_buffer);
+}
+
+
+/// #### 한국어 </br>
+/// 주어진 크기의 3차원 큐브 메쉬를 생성합니다. </br>
+/// 
+/// #### English (Translation) </br>
+/// Creates a 3d cube mesh with a given size. </br>
+/// 
+pub fn create_cube_mesh(
+    w: f32, 
+    h: f32, 
+    d: f32, 
+    device: &wgpu::Device, 
+    queue: &wgpu::Queue
+) -> ModelMesh {
+    assert!(w > 0.0 && h > 0.0 && d > 0.0);
+        
+    let hx = 0.5 * w;
+    let hy = 0.5 * h;
+    let hz = 0.5 * d;
+    let vertices = [
+        VertexInputLayout { position: (-hx, -hy, hz).into(), normal: ( 0.0,  0.0,  1.0).into() },
+        VertexInputLayout { position: ( hx, -hy,  hz).into(), normal: ( 0.0,  0.0,  1.0).into() },
+        VertexInputLayout { position: ( hx,  hy,  hz).into(), normal: ( 0.0,  0.0,  1.0).into() },
+        VertexInputLayout { position: (-hx,  hy,  hz).into(), normal: ( 0.0,  0.0,  1.0).into() },
+    
+        VertexInputLayout { position: (-hx,  hy, -hz).into(), normal: ( 0.0,  0.0, -1.0).into() },
+        VertexInputLayout { position: ( hx,  hy, -hz).into(), normal: ( 0.0,  0.0, -1.0).into() },
+        VertexInputLayout { position: ( hx, -hy, -hz).into(), normal: ( 0.0,  0.0, -1.0).into() },
+        VertexInputLayout { position: (-hx, -hy, -hz).into(), normal: ( 0.0,  0.0, -1.0).into() },
+
+        VertexInputLayout { position: ( hx, -hy, -hz).into(), normal: ( 1.0,  0.0,  0.0).into() },
+        VertexInputLayout { position: ( hx,  hy, -hz).into(), normal: ( 1.0,  0.0,  0.0).into() },
+        VertexInputLayout { position: ( hx,  hy,  hz).into(), normal: ( 1.0,  0.0,  0.0).into() },
+        VertexInputLayout { position: ( hx, -hy,  hz).into(), normal: ( 1.0,  0.0,  0.0).into() },
+    
+        VertexInputLayout { position: (-hx, -hy,  hz).into(), normal: (-1.0,  0.0,  0.0).into() },
+        VertexInputLayout { position: (-hx,  hy,  hz).into(), normal: (-1.0,  0.0,  0.0).into() },
+        VertexInputLayout { position: (-hx,  hy, -hz).into(), normal: (-1.0,  0.0,  0.0).into() },
+        VertexInputLayout { position: (-hx, -hy, -hz).into(), normal: (-1.0,  0.0,  0.0).into() },
+
+        VertexInputLayout { position: ( hx,  hy, -hz).into(), normal: ( 0.0,  1.0,  0.0).into() },
+        VertexInputLayout { position: (-hx,  hy, -hz).into(), normal: ( 0.0,  1.0,  0.0).into() },
+        VertexInputLayout { position: (-hx,  hy,  hz).into(), normal: ( 0.0,  1.0,  0.0).into() },
+        VertexInputLayout { position: ( hx,  hy,  hz).into(), normal: ( 0.0,  1.0,  0.0).into() },
+
+        VertexInputLayout { position: ( hx, -hy,  hz).into(), normal: ( 0.0, -1.0,  0.0).into() },
+        VertexInputLayout { position: (-hx, -hy,  hz).into(), normal: ( 0.0, -1.0,  0.0).into() },
+        VertexInputLayout { position: (-hx, -hy, -hz).into(), normal: ( 0.0, -1.0,  0.0).into() },
+        VertexInputLayout { position: ( hx, -hy, -hz).into(), normal: ( 0.0, -1.0,  0.0).into() },
+    ];
+    let vertex_buffer = VertexBuffer::from_vertices(
+        Some("CubeMesh"), 
+        &vertices, 
+        device, 
+        queue
+    );
+
+    let indices = [
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6, 7, 4, 
+        8, 9, 10, 10, 11, 8, 
+        12, 13, 14, 14, 15, 12, 
+        16, 17, 18, 18, 19, 16, 
+        20, 21, 22, 22, 23, 20, 
+    ];
+    let index_buffer = IndexBuffer::from_uint16_indices(
+        Some("CubeMesh"), 
+        &indices, 
+        device, 
+        queue
+    );
+
+    return ModelMesh::new_with_index_buffer(
+        vertex_buffer, 
+        index_buffer
+    );
 }

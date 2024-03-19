@@ -4,6 +4,7 @@ mod render;
 mod app;
 mod object;
 mod scene;
+mod timer;
 
 #[cfg(target_os = "android")]
 use winit::platform::android::activity::AndroidApp;

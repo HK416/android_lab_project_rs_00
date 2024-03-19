@@ -7,6 +7,7 @@ use winit::window::Window;
 
 use crate::scene::GameScene;
 use crate::scene::SampleScene;
+use crate::timer::GameTimer;
 
 
 #[cfg(target_os = "android")]
@@ -37,10 +38,13 @@ pub fn run_android<'a>(event_loop: EventLoop<()>) {
 
     let mut sample_scene = SampleScene::new(&device, &queue);
 
+    let mut timer = GameTimer::<50>::new();
     event_loop.set_control_flow(ControlFlow::Wait);
     event_loop.run(|event, elwt| {
         match event {
             Event::AboutToWait => {
+                timer.tick();
+                sample_scene.on_update(timer.elapsed_time_sec(), &device, &queue);
                 if let Some(window) = window.as_ref() {
                     window.request_redraw();
                 }
@@ -95,6 +99,9 @@ pub fn run_android<'a>(event_loop: EventLoop<()>) {
 
                         sample_scene.on_resized(&window, &device, &queue);
                     }
+                },
+                WindowEvent::Touch(touch) => {
+                    sample_scene.on_touch_event(touch, &device, &queue);
                 },
                 _ => { /* empty */ }
             },
@@ -157,10 +164,13 @@ pub fn run_dev(window: Window, event_loop: EventLoop<()>) {
 
     let mut sample_scene = SampleScene::new(&device, &queue);
 
+    let mut timer = GameTimer::<50>::new();
     event_loop.set_control_flow(ControlFlow::Wait);
     event_loop.run(|event, elwt| {
         match event {
             Event::AboutToWait => {
+                timer.tick();
+                sample_scene.on_update(timer.elapsed_time_sec(), &device, &queue);
                 window.request_redraw();
             }
             Event::WindowEvent { window_id, event } 
@@ -206,6 +216,9 @@ pub fn run_dev(window: Window, event_loop: EventLoop<()>) {
 
                     sample_scene.on_resized(&window, &device, &queue);
                 },
+                WindowEvent::KeyboardInput { event, .. } => {
+                    sample_scene.on_keyboard_event(event, &device, &queue);
+                }
                 _ => { /* empty */ }
             },
             Event::Suspended => {

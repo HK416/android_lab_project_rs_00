@@ -1,5 +1,4 @@
 use std::mem;
-use std::hash;
 use std::sync::Arc;
 use std::any::TypeId;
 use std::collections::HashMap;
