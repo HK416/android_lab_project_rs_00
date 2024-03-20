@@ -1,5 +1,7 @@
 # Android Lab Project 
 
+![preview image](./preview.jpg)
+
 [한국어](#개요) </br>
 [English(Translation)](#overview) </br>
 
