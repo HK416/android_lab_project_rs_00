@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::sync::Arc;
 use std::any::TypeId;
 use std::collections::HashMap;
@@ -10,14 +11,16 @@ use winit::event::KeyEvent;
 use winit::keyboard::KeyCode;
 use winit::keyboard::PhysicalKey;
 
-use crate::item::color::Rgb;
-use crate::item::color::Rgba;
+use crate::item::color::Color;
 use crate::item::projection::PerspectiveBuilder;
 use crate::item::projection::Projection;
 use crate::item::transform::Transform;
 use crate::item::transform::TransformBuilder;
 use crate::render::mesh::ModelMesh;
 use crate::render::pipeline::GraphicsPipeline;
+use crate::render::pipeline::ColoredPipeline;
+use crate::render::pipeline::TransparentPipeline;
+use crate::render::pipeline::CompositePipeline;
 use crate::render::texture::WeightedBlendedOIT;
 use crate::render::uniform::CameraUniformLayout;
 use crate::render::uniform::CameraUniform;
@@ -102,17 +105,14 @@ pub struct SampleScene {
 
     layouts: Arc<HashMap<TypeId, wgpu::BindGroupLayout>>, 
     weighted_blended_oit: Option<WeightedBlendedOIT>,
-    transparent_pipeline: GraphicsPipeline, 
-    composite_pipeline: GraphicsPipeline, 
+
+    graphics_pipelines: HashMap<TypeId, Box<dyn GraphicsPipeline>>,
 }
 
 impl SampleScene {
     pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
         use crate::render::mesh::create_plane_mesh;
         use crate::render::mesh::create_cube_mesh;
-        use crate::render::pipeline::create_colored_pipeline;
-        use crate::render::pipeline::create_transparent_pipeline;
-        use crate::render::pipeline::create_composite_pipeline;
 
         // (한국어) 바인드 그룹 레이아웃들을 생성합니다.
         // (English Translation) Create a bind group layouts. 
@@ -130,9 +130,9 @@ impl SampleScene {
 
         // (한국어) 그래픽스 파이프라인들을 생성합니다. 
         // (English Translation) Create graphics pipelines. 
-        let colored_pipeline = create_colored_pipeline(&layouts, device);
-        let transparent_pipeline = create_transparent_pipeline(&layouts, device);
-        let composite_pipeline = create_composite_pipeline(&layouts, device);
+        let colored_pipeline = ColoredPipeline::new(device, &layouts);
+        let transparent_pipeline = TransparentPipeline::new(device, &layouts);
+        let composite_pipeline = CompositePipeline::new(device, &layouts);
 
         // (한국어) 엔티티들을 생성합니다.
         // (English Translation) Create entities.
@@ -151,7 +151,7 @@ impl SampleScene {
         ));
 
         let _plane = world.spawn((
-            Rgb { red: 0.68, green: 0.68, blue: 0.68 }, 
+            Color::Rgb { red: 0.68, green: 0.68, blue: 0.68 }, 
             Transform::new(), 
             EntityUniform::new(&layouts, device), 
             plane_mesh.clone(), 
@@ -159,7 +159,7 @@ impl SampleScene {
         ));
 
         let _red_cube = world.spawn((
-            Rgb { red: 0.8, green: 0.2, blue: 0.2 },
+            Color::Rgb { red: 0.8, green: 0.2, blue: 0.2 },
             TransformBuilder::new()
                 .set_translation((0.0, 0.5, 0.0).into())
                 .build(), 
@@ -169,7 +169,7 @@ impl SampleScene {
         ));
 
         let _green_cube = world.spawn((
-            Rgb { red: 0.2, green: 0.8, blue: 0.2 }, 
+            Color::Rgb { red: 0.2, green: 0.8, blue: 0.2 }, 
             TransformBuilder::new()
                 .set_translation((-1.0, 0.88, 0.67).into())
                 .rotate_from_axis_angle((1.0, 1.0, 0.0).into(), 30.0f32.to_radians())
@@ -180,7 +180,7 @@ impl SampleScene {
         ));
 
         let _blue_cube = world.spawn((
-            Rgb { red: 0.2, green: 0.2, blue: 0.8 }, 
+            Color::Rgb { red: 0.2, green: 0.2, blue: 0.8 }, 
             TransformBuilder::new()
                 .set_translation((1.33, 1.2, -0.25).into())
                 .rotate_from_axis_angle((1.0, 0.0, 1.0).into(), 60.0f32.to_radians())
@@ -191,12 +191,33 @@ impl SampleScene {
         ));
 
         let _yellow_cube = world.spawn((
-            Rgba { red: 0.8, green: 0.8, blue: 0.2, alpha: 0.3 }, 
+            Color::Rgba { red: 0.8, green: 0.8, blue: 0.2, alpha: 0.3 }, 
             TransformBuilder::new()
-                .set_translation((2.0, 1.0, 2.0).into())
+                .set_translation((1.2, 1.0, 1.5).into())
                 .build(),
             EntityUniform::new(&layouts, device), 
             cube_mesh_1.clone(), 
+            transparent_pipeline.clone(), 
+        ));
+
+        let _magenta_cube = world.spawn((
+            Color::Rgba { red: 0.8, green: 0.2, blue: 0.8, alpha: 0.8 }, 
+            TransformBuilder::new()
+                .set_translation((1.3, 1.1, 1.6).into())
+                .build(), 
+            EntityUniform::new(&layouts, device), 
+            cube_mesh_1.clone(), 
+            transparent_pipeline.clone(), 
+        ));
+
+        let _cyan_cube = world.spawn((
+            Color::Rgba { red: 0.2, green: 0.8, blue: 0.8, alpha: 0.5 }, 
+            TransformBuilder::new()
+                .set_translation((1.1, 0.9, 1.4).into())
+                .build(),
+            EntityUniform::new(&layouts, device), 
+            cube_mesh_1.clone(), 
+            transparent_pipeline.clone(), 
         ));
 
         // (한국어) 카메라의 유니폼 버퍼를 갱신합니다.
@@ -214,16 +235,7 @@ impl SampleScene {
 
         // (한국어) 엔티티의 유니폼 버퍼를 갱신합니다.
         // (English Translation) Updates the entity's uniform buffer. 
-        for (_, (color, transform, uniform)) in world.query::<(&Rgb, &Transform, &EntityUniform)>().iter() {
-            uniform.update(
-                queue,
-                EntityUniformLayout {
-                    color: color.as_vec4(), 
-                    world: transform.world_matrix_ref().clone(), 
-                }
-            );
-        }
-        for (_, (color, transform, uniform)) in world.query::<(&Rgba, &Transform, &EntityUniform)>().iter() {
+        for (_, (color, transform, uniform)) in world.query::<(&Color, &Transform, &EntityUniform)>().iter() {
             uniform.update(
                 queue,
                 EntityUniformLayout {
@@ -241,8 +253,11 @@ impl SampleScene {
             touch_prev_x: 0.0, 
             layouts, 
             weighted_blended_oit: None, 
-            transparent_pipeline, 
-            composite_pipeline, 
+            graphics_pipelines: HashMap::from([
+                (colored_pipeline.type_id(), Box::new(colored_pipeline) as Box<_>),
+                (transparent_pipeline.type_id(), Box::new(transparent_pipeline) as Box<_>), 
+                (composite_pipeline.type_id(), Box::new(composite_pipeline) as Box<_>),
+            ]), 
         }
     }
 
@@ -377,38 +392,22 @@ impl GameScene for SampleScene {
         let mut query = self.world.query_one::<&CameraUniform>(self.main_camera).unwrap();
         let main_camera = query.get().unwrap();
 
-        let mut opaque_render_map: HashMap<GraphicsPipeline, HashMap<ModelMesh, Vec<EntityUniform>>> = HashMap::new();
-        let mut query = self.world.query::<(&GraphicsPipeline, &ModelMesh, &EntityUniform)>().with::<&Rgb>();
-        for (_, (pipeline, model_mesh, uniform)) in query.iter() {
-            opaque_render_map.entry(pipeline.clone())
-                .and_modify(|map| {
-                    map.entry(model_mesh.clone())
-                        .and_modify(|vec| {
-                            vec.push(uniform.clone())
-                        })
-                        .or_insert(vec![uniform.clone()]);
-                })
-                .or_insert(HashMap::from([(
-                    model_mesh.clone(), 
-                    vec![uniform.clone()]
-                )]));
-        }
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
 
-        let mut transparent_render_map: HashMap<ModelMesh, Vec<EntityUniform>> = HashMap::new();
-        let mut query = self.world.query::<(&ModelMesh, &EntityUniform)>().with::<&Rgba>();
-        for (_, (model_mesh, uniform)) in query.iter() {
-            transparent_render_map.entry(model_mesh.clone())
-                .and_modify(|vec| {
-                    vec.push(uniform.clone())
-                })
+        let pipeline = self.graphics_pipelines.get(&TypeId::of::<ColoredPipeline>())
+            .expect("ColoredPipeline not found!");
+        let mut query = self.world.query::<(&ModelMesh, &EntityUniform)>().with::<&ColoredPipeline>();
+        let mut model_mesh_map: HashMap<ModelMesh, Vec<EntityUniform>> = HashMap::new();
+        for (_id, (model_mesh, uniform)) in query.iter() {
+            model_mesh_map.entry(model_mesh.clone())
+                .and_modify(|vec| vec.push(uniform.clone()))
                 .or_insert(vec![uniform.clone()]);
         }
 
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         {
             let mut rpass = encoder.begin_render_pass(
                 &wgpu::RenderPassDescriptor {
-                    label: Some("RenderPass(Opaque)"), 
+                    label: Some("RenderPass(ColoredPipeline)"), 
                     color_attachments: &[
                         Some(wgpu::RenderPassColorAttachment {
                             view: render_target_view, 
@@ -432,17 +431,26 @@ impl GameScene for SampleScene {
                 }, 
             );
 
-            for (pipeline, map) in opaque_render_map.iter() {
-                pipeline.bind(&mut rpass);
-                main_camera.bind(&mut rpass, 0);
-                for (model_mesh, entities) in map.iter() {
-                    model_mesh.bind(&mut rpass, 0);
-                    for entity in entities.iter() {
-                        entity.bind(&mut rpass, 1);
-                        model_mesh.draw(&mut rpass, 0..1);
-                    }
+            pipeline.bind(&mut rpass);
+            main_camera.bind(&mut rpass, 0);
+            for (model_mesh, entities) in model_mesh_map.iter() {
+                model_mesh.bind(&mut rpass, 0);
+                for entity in entities.iter() {
+                    entity.bind(&mut rpass, 1);
+                    model_mesh.draw(&mut rpass, 0..1);
                 }
             }
+        }
+
+        
+        let pipeline = self.graphics_pipelines.get(&TypeId::of::<TransparentPipeline>())
+            .expect("ColoredPipeline not found!");
+        let mut query = self.world.query::<(&ModelMesh, &EntityUniform)>().with::<&TransparentPipeline>();
+        let mut model_mesh_map: HashMap<ModelMesh, Vec<EntityUniform>> = HashMap::new();
+        for (_id, (model_mesh, uniform)) in query.iter() {
+            model_mesh_map.entry(model_mesh.clone())
+                .and_modify(|vec| vec.push(uniform.clone()))
+                .or_insert(vec![uniform.clone()]);
         }
 
         {
@@ -468,9 +476,9 @@ impl GameScene for SampleScene {
                 }
             );
 
-            self.transparent_pipeline.bind(&mut rpass);
+            pipeline.bind(&mut rpass);
             main_camera.bind(&mut rpass, 0);
-            for (model_mesh, entities) in transparent_render_map.iter() {
+            for (model_mesh, entities) in model_mesh_map.iter() {
                 model_mesh.bind(&mut rpass, 0);
                 for entity in entities.iter() {
                     entity.bind(&mut rpass, 1);
@@ -478,6 +486,9 @@ impl GameScene for SampleScene {
                 }
             }
         }
+
+        let pipeline = self.graphics_pipelines.get(&TypeId::of::<CompositePipeline>())
+            .expect("ColoredPipeline not found!");
 
         {
             let mut rpass = encoder.begin_render_pass(
@@ -508,7 +519,7 @@ impl GameScene for SampleScene {
                 }
             );
 
-            self.composite_pipeline.bind(&mut rpass);
+            pipeline.bind(&mut rpass);
             weighted_blended_oit.bind(&mut rpass, 0);
             rpass.draw(0..4, 0..1);
         }
